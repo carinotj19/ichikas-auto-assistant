@@ -134,13 +134,27 @@ def clear_common_cm():
                 rep.message('播放广告')
                 logger.debug('Clicked CM start button.')
                 sleep(1)
+                state = 2
             # 没有剩余广告了
             else:
                 if not R.Hud.ButtonGoBack.exists():
                     logger.info('All ads cleared.')
                     break
         elif state == 2:
-            if R.Cm.ButtonPlayCm.q(threshold=0.7).find():
+            if R.Cm.TextCmFailed.find():
+                logger.info('Ad play failed before ad loaded.')
+                device.click(1, 1)
+                sleep(0.5)
+                state = 1
+            elif AnyOf[
+                R.Cm.TextAwardClaimed,
+                R.Cm.TextApRecovered
+            ].find():
+                logger.info('Ad award claimed before ad loaded.')
+                device.click_center()
+                rep.message('å¥–åŠ±å·²é¢†å–')
+                state = 1
+            elif R.Cm.ButtonPlayCm.q(threshold=0.7).find():
                 rep.message('等待广告载入')
                 logger.debug('Loading ad...')
                 sleep(0.2)

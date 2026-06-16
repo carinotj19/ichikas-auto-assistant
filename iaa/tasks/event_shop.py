@@ -113,6 +113,11 @@ def goto_event_shop() -> None:
     """
     for _ in Loop(interval=1):
         if R.Shop.TextEndTimeUntil.exists():
+            if R.Shop.ButtonExchange.exists():
+                device.click(1255, 25)
+                logger.debug("Closed menu overlay on event shop")
+                sleep(0.5)
+                continue
             logger.info("Now at event shop")
             return
         elif R.Shop.ButtonExchange.try_click():

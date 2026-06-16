@@ -319,17 +319,19 @@ class ShopItem(str, Enum):
         obj.tw = tw
         return obj
 
-    def display(self, server: Literal["jp", "cn", "tw"]) -> str:
+    def display(self, server: Literal["jp", "cn", "tw", "en"]) -> str:
         if server == "jp":
             return self.jp
         if server == "cn":
             return self.cn
         if server == "tw":
             return self.tw
+        if server == "en":
+            return self.value
         raise ValueError(f"Unsupported server: {server}")
 
     @classmethod
-    def from_display(cls, server: Literal["jp", "cn", "tw"], text: str) -> Optional["ShopItem"]:
+    def from_display(cls, server: Literal["jp", "cn", "tw", "en"], text: str) -> Optional["ShopItem"]:
         try:
             return cls._display_maps[server].get(text)
         except KeyError as e:
@@ -340,4 +342,5 @@ ShopItem._display_maps = {
     "jp": {item.jp: item for item in ShopItem},
     "cn": {item.cn: item for item in ShopItem},
     "tw": {item.tw: item for item in ShopItem},
+    "en": {item.value: item for item in ShopItem},
 }

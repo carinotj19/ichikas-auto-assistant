@@ -89,7 +89,7 @@ CHALLENGE_AWARD_PREFABS: dict[ChallengeLiveAward, PrefabClass] = {
 def _skip():
     if server() == 'jp':
         device.click(1, 1)
-    elif server() == 'tw' or server() == 'cn':
+    elif server() in ('tw', 'cn', 'en'):
         # 台服要点侧边，点左上角没用
         device.click(6, 346)
     else:
@@ -290,6 +290,11 @@ def _wait_live_end(live_mode: LiveMode) -> None:
                 rep.message('AP 不足，正在退出')
                 logger.info('Auto lives all completed.')
                 sleep(0.3)
+                break
+            if R.Live.TextScoreRank.exists():
+                logger.debug('Score rank found during auto live; settling as single result.')
+                sleep(1)
+                device.click_center()
                 break
         else:
             # 单次演出

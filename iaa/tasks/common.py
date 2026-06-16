@@ -1,6 +1,7 @@
 from kotonebot import logging, sleep
 from kotonebot.backend.core import HintBox
 from kotonebot import device, Loop, action, color
+from kotonebot.errors import MissingResourceVariant
 
 from . import R
 from iaa.context import task_reporter, server
@@ -27,6 +28,14 @@ def go_home(*, check_alive: bool = False):
         if R.Hud.ButtonLive.find() or (server() == 'tw' and R.Hud.ButtonLiveTwEvent.find()):
             logger.debug('Live button found.')
             break
+        elif R.Shop.TextEndTimeUntil.exists():
+            if R.Shop.ButtonExchange.exists():
+                device.click(1180, 584)
+                logger.debug('Clicked HOME from event shop menu.')
+            else:
+                R.Login.ButtonMenu.try_click()
+                logger.debug('Opened menu from event shop.')
+            sleep(0.5)
         elif R.Hud.ButtonGoBack.try_click():
             logger.debug('Go back button found and clicked.')
         else:
@@ -41,12 +50,14 @@ def hanlde_tip_dialog() -> bool:
 
     :return: 如果处理了提示对话框，则返回 True；否则返回 False。
     """
-    if btn := (
-        R.CommonDialog.ButtonTipDialogNext.find()
-        or R.CommonDialog.ButtonTipDialogClose.find()
-    ):
+    btn = R.CommonDialog.ButtonTipDialogNext.find()
+    if not btn:
+        try:
+            btn = R.CommonDialog.ButtonTipDialogClose.find()
+        except MissingResourceVariant:
+            btn = None
+    if btn:
         btn.click()
         logger.info('Tip dialog found (button %s) and clicked.', str(btn.prefab))
         return True
     return False
-    

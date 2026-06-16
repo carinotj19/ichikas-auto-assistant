@@ -4,6 +4,7 @@ import cv2
 from kotonebot import device, sleep
 
 from . import R
+from iaa.context import server
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def handle_notification():
         logger.debug('Notification found and closed.')
         return True
     # 台服、国服特有弹窗
-    if R.Login.TextSekaiAnnouncements.find():
+    if server() in ('tw', 'cn') and R.Login.TextSekaiAnnouncements.find():
         logger.debug('Announcement dialog found.')
         if R.Hud.ButtonGoBack.try_click():
             logger.debug('Clicked go back button to close announcement dialog.')

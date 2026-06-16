@@ -3,6 +3,7 @@ import unittest
 from iaa.application.qt.models.mappings import SERVER_DISPLAY_MAP, SERVER_VALUE_MAP
 from iaa.config.schemas import GameConfig
 from iaa.definitions.consts import bundle_id_by_server, package_by_server
+from iaa.definitions.enums import ShopItem
 
 
 class GlobalEnConfigTests(unittest.TestCase):
@@ -18,6 +19,10 @@ class GlobalEnConfigTests(unittest.TestCase):
     def test_global_server_is_exposed_to_settings_options(self) -> None:
         self.assertIn('en', SERVER_DISPLAY_MAP)
         self.assertEqual(SERVER_VALUE_MAP[SERVER_DISPLAY_MAP['en']], 'en')
+
+    def test_shop_item_display_accepts_en_server(self) -> None:
+        self.assertEqual(ShopItem.ITEM_CRYSTAL.display('en'), 'crystal')
+        self.assertEqual(ShopItem.from_display('en', '3star_event_card'), ShopItem.ITEM_3STAR_MEMBER)
 
 
 if __name__ == '__main__':
