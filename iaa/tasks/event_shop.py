@@ -2,6 +2,7 @@ from typing import Literal
 from typing_extensions import assert_never
 
 import cv2
+import numpy as np
 from kotonebot import task, logging, Loop, device, sleep
 from kotonebot.core import TemplateMatchPrefab
 from kotonebot.backend import image
@@ -13,6 +14,18 @@ from iaa.game_ui.list_view import ListViewItem
 from iaa.game_ui.side_tabbar import SideTabbar
 
 logger = logging.getLogger(__name__)
+
+WORLD_LINK_TAB_COUNT = 5
+WORLD_LINK_TAB_OVERALL_X = 266
+WORLD_LINK_TAB_STEP_X = 200
+WORLD_LINK_TAB_SEARCH_RECT = (140, 65, 1140, 125)
+WORLD_LINK_ACTIVE_HSV_LOWER = np.array((125, 45, 80), dtype=np.uint8)
+WORLD_LINK_ACTIVE_HSV_UPPER = np.array((165, 255, 255), dtype=np.uint8)
+WORLD_LINK_STRIP_HSV_LOWER = np.array((0, 0, 115), dtype=np.uint8)
+WORLD_LINK_STRIP_HSV_UPPER = np.array((179, 75, 235), dtype=np.uint8)
+WORLD_LINK_STRIP_MIN_RATIO = 0.50
+WORLD_LINK_STRIP_MIN_EDGE_RATIO = 0.05
+WORLD_LINK_TAB_Y_RATIO = 0.146
 
 def _shop_item_to_resource(item: ShopItem) -> type[TemplateMatchPrefab]:
     match item:
@@ -104,6 +117,49 @@ def _is_char_item(item: ListViewItem) -> Literal[2] | Literal[3] | None:
     else:
         logger.warning("Failed to determine character card star count for item %d", item.index)
         return None
+
+def _find_world_link_tab_points(screenshot=None) -> list[tuple[int, int]]:
+    img = device.screenshot() if screenshot is None else screenshot
+    height, width = img.shape[:2]
+    x1, y1, x2, y2 = WORLD_LINK_TAB_SEARCH_RECT
+    x1 = max(0, min(width - 1, x1))
+    x2 = max(x1 + 1, min(width, x2))
+    y1 = max(0, min(height - 1, y1))
+    y2 = max(y1 + 1, min(height, y2))
+
+    roi = img[y1:y2, x1:x2]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    mask = cv2.inRange(hsv, WORLD_LINK_ACTIVE_HSV_LOWER, WORLD_LINK_ACTIVE_HSV_UPPER)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((9, 9), dtype=np.uint8))
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    best_rect: tuple[int, int, int, int] | None = None
+    best_area = 0.0
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        area = cv2.contourArea(contour)
+        if area < 1_000 or w < 120 or h < 18:
+            continue
+        if area > best_area:
+            best_area = area
+            best_rect = (x1 + x, y1 + y, w, h)
+
+    if best_rect is not None:
+        _, active_y, _, active_h = best_rect
+        tab_y = active_y + active_h // 2
+    else:
+        strip_mask = cv2.inRange(hsv, WORLD_LINK_STRIP_HSV_LOWER, WORLD_LINK_STRIP_HSV_UPPER)
+        strip_ratio = np.count_nonzero(strip_mask) / strip_mask.size
+        edge_ratio = np.count_nonzero(cv2.Canny(cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY), 80, 180)) / strip_mask.size
+        if strip_ratio < WORLD_LINK_STRIP_MIN_RATIO or edge_ratio < WORLD_LINK_STRIP_MIN_EDGE_RATIO:
+            return []
+        tab_y = int(round(height * WORLD_LINK_TAB_Y_RATIO))
+
+    return [
+        (WORLD_LINK_TAB_OVERALL_X + WORLD_LINK_TAB_STEP_X * index, tab_y)
+        for index in range(WORLD_LINK_TAB_COUNT)
+        if WORLD_LINK_TAB_OVERALL_X + WORLD_LINK_TAB_STEP_X * index < width
+    ]
 
 def goto_event_shop() -> None:
     """导航到活动商店界面
@@ -233,6 +289,19 @@ def _do_single() -> None:
                 logger.info("Skipping target item %s because it cannot be purchased now", target.display(server()))
                 break
 
+def _do_current_event_shop() -> None:
+    world_link_tab_points = _find_world_link_tab_points()
+    if not world_link_tab_points:
+        _do_single()
+        return
+
+    logger.info("World Link event shop tabs found: %d", len(world_link_tab_points))
+    for index, point in enumerate(world_link_tab_points, start=1):
+        logger.info("Processing World Link shop tab %d/%d", index, len(world_link_tab_points))
+        device.click(point)
+        sleep(0.8)
+        _do_single()
+
 @task('活动商店', screenshot_mode='manual')
 def event_shop():
     goto_event_shop()
@@ -242,8 +311,10 @@ def event_shop():
     tabs = sidebar.update().tabs
     if len(tabs) == 0:
         logger.warning("No tabs found in sidebar. Continuing without switching tabs.")
+        _do_current_event_shop()
+        return
         
     with rep.phase('活动', total=len(tabs)):
         for tab in tabs:
             sidebar.switch_to(tab)
-            _do_single()
+            _do_current_event_shop()
