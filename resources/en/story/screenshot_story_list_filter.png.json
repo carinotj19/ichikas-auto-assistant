@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "cf35db62-eb92-493b-a620-77897740d9f6": {
+      "type": "prefab",
+      "name": "Story.StoryList.ButtonConfirmFilter",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 653,
+          "y1": 629,
+          "x2": 868,
+          "y2": 684
+        },
+        "fixed": true
+      }
+    },
+    "9b2c08fb-f2ff-4598-8974-819caac34249": {
+      "type": "prefab",
+      "name": "Story.StoryList.RadioUnread",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 638,
+          "y1": 218,
+          "x2": 958,
+          "y2": 258
+        },
+        "fixed": true
+      }
+    }
+  }
+}

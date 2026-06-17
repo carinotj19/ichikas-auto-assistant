@@ -20,9 +20,9 @@ def _go_list():
     go_home()
     for _ in Loop():
         if R.Story.ImageMainStory.try_click():
-            pass
+            sleep(1)
         elif R.Hud.ButtonStory.try_click():
-            pass
+            sleep(1)
         elif R.Story.StoryList.ButtonExpandUnit.find():
             break
 
@@ -39,15 +39,16 @@ def _filter_unread():
             break
         # 打开过滤弹窗
         elif R.Story.StoryList.ButtonFilter.try_click():
-            pass
+            sleep(0.4)
     clicked = False
     for _ in Loop():
         # 选择只展示未读剧情
         if not clicked and R.Story.StoryList.RadioUnread.try_click():
             clicked = True
+            sleep(0.3)
         # 确认过滤弹窗
         elif R.Story.StoryList.ButtonConfirmFilter.try_click():
-            pass
+            sleep(0.8)
         # 等弹窗关闭
         elif R.Story.StoryList.ButtonFilter.find():
             break
@@ -62,7 +63,7 @@ def _farm_single():
     # 进入分集列表
     for _ in Loop():
         if R.Story.StoryList.ButtonEnter.try_click():
-            pass
+            sleep(1)
         elif R.Story.ButtonBookmark.exists():
             break
     # 刷剧情

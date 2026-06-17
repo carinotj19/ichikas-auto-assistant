@@ -1,0 +1,35 @@
+{
+  "version": 3,
+  "definitions": {
+    "45e8ae05-fe00-4644-8f13-4e2c53f417a0": {
+      "type": "prefab",
+      "name": "Story.TextMvPausedDialog",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 540,
+          "y1": 314,
+          "x2": 743,
+          "y2": 358
+        },
+        "fixed": true
+      }
+    },
+    "306ef78a-cf2c-4e29-8361-cff97e42c4ef": {
+      "type": "prefab",
+      "name": "Story.ButtonSkipMv",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 412,
+          "y1": 397,
+          "x2": 627,
+          "y2": 451
+        },
+        "fixed": true
+      }
+    }
+  }
+}
