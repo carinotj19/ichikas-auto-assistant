@@ -22,7 +22,7 @@ def go_activity_story():
     for _ in Loop():
         # 新开活动，第一次进入会自动阅读第一话
         if R.Story.ButtonStoryMenu.exists():
-            skip_stories(mode='skip', end_condition=R.Hud.ButtonGoBack.exists)
+            skip_stories(mode='skip', end_condition=at_story_list)
             continue
         # 自动阅读第一话后会弹出说明提示
         if hanlde_tip_dialog():

@@ -17,6 +17,20 @@ def _find_award_claimed_ok():
     except MissingResourceVariant:
         return None
 
+def _handle_voice_download_prompt():
+    if R.Story.CheckboxContinuousReading.q(threshold=0.98).find():
+        # Skip mode should not chain episodes automatically.
+        device.click()
+        logger.debug('Unchecked continuous reading checkbox.')
+        sleep(0.2)
+
+    if R.Story.ButtonWithoutVoice.try_click():
+        logger.debug('Clicked without voice button.')
+        sleep(0.4)
+        return True
+
+    return False
+
 @action('进入剧情阅读')
 def enter_story(*, is_wl: bool = False):
     """
@@ -30,17 +44,8 @@ def enter_story(*, is_wl: bool = False):
             # 位于剧情画面
             logger.info('Now at story.')
             break
-        elif R.Story.CheckboxContinuousReading.q(threshold=0.98).find():
-            # threshold 0.98 是因为更低会命中未选中状态
-            # TODO: 需要一个更好的区别方式
-            # 勾选连续阅读
-            device.click()
-            logger.debug('Clicked continuous reading checkbox.')
-            sleep(0.4)
-        elif R.Story.ButtonWithoutVoice.try_click():
-            # 选择无语音模式
-            logger.debug('Clicked without voice button.')
-            sleep(0.4)
+        elif _handle_voice_download_prompt():
+            pass
         else:
             # 尝试点进最上面一话
             if is_wl:
@@ -61,6 +66,8 @@ def skip_stories(mode: SkipMode = 'skip', *, end_condition: Callable[[], bool]):
     for _ in Loop(interval=0.5):
         if R.Story.ButtonStoryMenu.try_click():
             logger.debug('Clicked story menu button.')
+        elif _handle_voice_download_prompt():
+            pass
         elif _find_award_claimed_ok():
             # 奖励领取
             logger.debug('Found award claimed dialog.')
