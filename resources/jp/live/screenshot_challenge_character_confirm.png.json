@@ -1,0 +1,25 @@
+{
+  "version": 3,
+  "definitions": {
+    "c2b6c8be-7df1-4f4a-968b-fc407768cb15": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Live.ChallengeLive.ButtonSelectCharacterConfirm",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 724,
+          "y1": 526,
+          "x2": 797,
+          "y2": 558
+        }
+      },
+      "displayName": "Challenge Live character select confirmation button",
+      "variant_policy": {
+        "tw": "inherit",
+        "cn": "inherit",
+        "en": "require"
+      }
+    }
+  }
+}

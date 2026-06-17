@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "definitions": {
+    "c2b6c8be-7df1-4f4a-968b-fc407768cb15": {
+      "type": "prefab",
+      "name": "Live.ChallengeLive.ButtonSelectCharacterConfirm",
+      "variant": "en",
+      "props": {}
+    }
+  }
+}

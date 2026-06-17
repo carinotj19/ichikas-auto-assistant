@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "definitions": {
+    "36d97e62-3160-4b52-a7ec-84fa44e7ecc6": {
+      "type": "prefab",
+      "name": "Live.ChallengeLive.CharaIchika",
+      "variant": "en",
+      "props": {}
+    },
+    "2c1cd5be-19d4-4d04-bcc2-007a3a070a15": {
+      "type": "prefab",
+      "name": "Live.ChallengeLive.CharaSaki",
+      "variant": "en",
+      "props": {}
+    },
+    "e111fa38-1ff4-49c7-b1bd-fd876cb5ee3b": {
+      "type": "prefab",
+      "name": "Live.ChallengeLive.CharaHonami",
+      "variant": "en",
+      "props": {}
+    },
+    "0aa9773e-68b7-464d-b96e-70cf4a630505": {
+      "type": "prefab",
+      "name": "Live.ChallengeLive.CharaShiho",
+      "variant": "en",
+      "props": {}
+    }
+  }
+}

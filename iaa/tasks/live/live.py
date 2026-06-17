@@ -607,7 +607,10 @@ def challenge_live(
     logger.info(f'Selecting character: {character.value}')
     char, group = CHARACTER_PREFABS[character]
     for _ in Loop(interval=0.6):
-        if char.try_click():
+        if R.Live.ChallengeLive.ButtonSelectCharacterConfirm.try_click():
+            logger.debug('Clicked challenge live character confirmation.')
+            sleep(0.5)
+        elif char.try_click():
             logger.debug('Clicked character.')
         elif group and group.try_click():
             logger.debug('Clicked group for character.')
