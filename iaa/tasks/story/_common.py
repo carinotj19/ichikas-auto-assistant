@@ -3,12 +3,19 @@ from typing_extensions import assert_never
 
 from kotonebot import action, Loop, device, sleep
 from kotonebot import logging
+from kotonebot.errors import MissingResourceVariant
 
 from .. import R
 
 logger = logging.getLogger(__name__)
 
 SkipMode = Literal['skip', 'read']
+
+def _find_award_claimed_ok():
+    try:
+        return R.CommonDialog.TextAwardClaimedOk.find()
+    except MissingResourceVariant:
+        return None
 
 @action('进入剧情阅读')
 def enter_story(*, is_wl: bool = False):
@@ -54,7 +61,7 @@ def skip_stories(mode: SkipMode = 'skip', *, end_condition: Callable[[], bool]):
     for _ in Loop(interval=0.5):
         if R.Story.ButtonStoryMenu.try_click():
             logger.debug('Clicked story menu button.')
-        elif R.CommonDialog.TextAwardClaimedOk.find():
+        elif _find_award_claimed_ok():
             # 奖励领取
             logger.debug('Found award claimed dialog.')
             if R.CommonDialog.ButtonAwardClaimedOk.try_click():

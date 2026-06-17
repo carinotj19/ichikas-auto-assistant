@@ -27,8 +27,17 @@ def _clear():
         for c in convos:
             rep.message('阅读剧情')
             c.click()
-            sleep(0.1)
-            skip_stories(mode='skip', end_condition=at_home)
+            story_started = False
+            for _ in range(40):
+                sleep(0.2)
+                if R.Story.ButtonStoryMenu.find():
+                    story_started = True
+                    break
+                if not at_home():
+                    story_started = True
+                    break
+            if story_started:
+                skip_stories(mode='skip', end_condition=at_home)
     logger.info('Current area unread conversations cleared.')
 
 
