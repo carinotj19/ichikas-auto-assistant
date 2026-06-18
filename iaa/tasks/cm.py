@@ -1,7 +1,6 @@
 import time
 
 from kotonebot import logging
-from kotonebot.core import AnyOf
 from kotonebot import device, task, Loop, action, sleep
 
 from . import R
@@ -25,6 +24,42 @@ def _sleep(sec: float, msg: str = '', interval: float = 1):
         if msg:
             rp.message(msg % max(0, int(sec - (time.time() - start_time))))
         sleep(interval)
+
+def _find_cm_award_claimed():
+    if server() == 'en':
+        award = R.Cm.TextAwardClaimed.q(colored=True).find()
+    else:
+        award = R.Cm.TextAwardClaimed.find()
+    return award or R.Cm.TextApRecovered.find()
+
+def _click_cm_play_button():
+    if server() == 'en':
+        if matches := R.Cm.ButtonPlayCm.find_all():
+            ret = min(matches, key=lambda obj: obj.rect.y1)
+            x, y = ret.rect.center
+            device.click(x + 105, y)
+            return True
+        return False
+    return R.Cm.ButtonPlayCm.try_click()
+
+def _dismiss_cm_award_claimed():
+    device.click(1000, 520)
+    sleep(0.5)
+
+def _try_click_cm_ad_button(prefab, *, threshold: float | None = None):
+    try:
+        if threshold is None:
+            return prefab.try_click()
+        return prefab.q(threshold=threshold).try_click()
+    except Exception:
+        logger.debug('CM ad button match failed.', exc_info=True)
+        return False
+
+def _click_cm_ad_corner_close():
+    device.click(1255, 23)
+    sleep(0.5)
+    device.click(1230, 93)
+    sleep(1)
 
 @action('是否位于交叉路口')
 def is_at_intersection() -> bool:
@@ -122,56 +157,91 @@ def clear_common_cm():
     rep = task_reporter()
     d = device.of_android()
     state: int = 1 # 1=开始看，2=载入，3=正在看，4=等结果
+    state_started_at = time.time()
     wait_sec = get_conf().cm.watch_ad_wait_sec
     for _ in Loop(interval=0.6):
         if state == 1:
             # 开始看
-            if R.Cm.ButtonCmStart.q(threshold=0.7).try_click():
+            if R.Cm.TextCmFailed.find():
+                logger.info('Ad play failed.')
+                device.click(1, 1)
+                sleep(0.5)
+            elif _find_cm_award_claimed():
+                logger.info('Ad award claimed.')
+                _dismiss_cm_award_claimed()
+                rep.message('奖励已领取')
+            elif R.Cm.ButtonCmStart.q(threshold=0.7).try_click():
                 logger.debug('Clicked 視聴開始 button.')
                 sleep(1)
                 state = 2
-            elif R.Cm.ButtonPlayCm.try_click():
+                state_started_at = time.time()
+            elif _click_cm_play_button():
                 rep.message('播放广告')
                 logger.debug('Clicked CM start button.')
                 sleep(1)
                 state = 2
+                state_started_at = time.time()
             # 没有剩余广告了
             else:
-                if not R.Hud.ButtonGoBack.exists():
+                if is_at_intersection():
                     logger.info('All ads cleared.')
                     break
+                elif R.Hud.ButtonGoBack.exists():
+                    logger.info('All ads cleared.')
+                    R.Hud.ButtonGoBack.try_click()
+                    sleep(0.5)
+                    break
+                else:
+                    logger.info('CM page is not visible. Assuming ad loaded.')
+                    state = 3
+                    state_started_at = time.time()
         elif state == 2:
             if R.Cm.TextCmFailed.find():
                 logger.info('Ad play failed before ad loaded.')
                 device.click(1, 1)
                 sleep(0.5)
                 state = 1
-            elif AnyOf[
-                R.Cm.TextAwardClaimed,
-                R.Cm.TextApRecovered
-            ].find():
+                state_started_at = time.time()
+            elif _find_cm_award_claimed():
                 logger.info('Ad award claimed before ad loaded.')
-                device.click_center()
+                _dismiss_cm_award_claimed()
                 rep.message('å¥–åŠ±å·²é¢†å–')
                 state = 1
+                state_started_at = time.time()
             elif R.Cm.ButtonPlayCm.q(threshold=0.7).find():
-                rep.message('等待广告载入')
-                logger.debug('Loading ad...')
-                sleep(0.2)
+                if time.time() - state_started_at < 8:
+                    rep.message('等待广告载入')
+                    logger.debug('Loading ad...')
+                    sleep(0.2)
+                else:
+                    logger.info('Returned to CM selection before ad loaded.')
+                    state = 1
+                    state_started_at = time.time()
             else:
                 rep.message('等待广告结束')
                 logger.info(f'Ad loaded. Wait {wait_sec} sec.')
                 state = 3
+                state_started_at = time.time()
         elif state == 3:
             _sleep(wait_sec, msg='等待广告结束，剩余 %d 秒')
             logger.debug('Wait ad finished.')
             # 返回桌面再重新打开游戏就可以关闭广告
-            d.commands.adb_shell('input keyevent KEYCODE_HOME')
-            sleep(0.5)
-            d.launch_app(package_name())
-            sleep(0.5)
-            logger.debug('Ad skipped.')
+            if _try_click_cm_ad_button(R.Cm.Ad1.ButtonSkip, threshold=0.7):
+                logger.debug('Clicked skip button after ad wait.')
+                sleep(1)
+            elif _try_click_cm_ad_button(R.Cm.Ad1.ButtonClose):
+                logger.debug('Clicked close button after ad wait.')
+                sleep(1)
+            else:
+                _click_cm_ad_corner_close()
+                if device.commands.current_package() != package_name():
+                    d.commands.adb_shell('input keyevent KEYCODE_HOME')
+                    sleep(0.5)
+                    d.launch_app(package_name())
+                    sleep(0.5)
+                logger.debug('Ad skipped.')
             state = 4
+            state_started_at = time.time()
         elif state == 4:
             # 由于广告没放完就点了跳过导致领取奖励失败
             if R.Cm.TextCmFailed.find():
@@ -179,21 +249,21 @@ def clear_common_cm():
                 device.click(1, 1) # 关闭弹窗
                 sleep(0.5)
                 state = 1
+                state_started_at = time.time()
             # 看完了
-            elif AnyOf[
-                R.Cm.TextAwardClaimed,
-                R.Cm.TextApRecovered
-            ].find():
+            elif _find_cm_award_claimed():
                 logger.info('Ad award claimed.')
-                device.click_center() # 关闭奖励领取提示
+                _dismiss_cm_award_claimed()
                 rep.message('奖励已领取')
                 state = 1
+                state_started_at = time.time()
             # Applovin 广告特判
-            elif R.Cm.Ad1.ButtonClose.try_click():
+            elif _try_click_cm_ad_button(R.Cm.Ad1.ButtonClose):
                 logger.info('Close button clicked. (Applovin/GP ad?)')
                 sleep(1)
                 state = 1
-            elif R.Cm.Ad1.ButtonSkip.q(threshold=0.7).try_click():
+                state_started_at = time.time()
+            elif _try_click_cm_ad_button(R.Cm.Ad1.ButtonSkip, threshold=0.7):
                 logger.info('Skip button clicked. (Applovin/GP ad?)')
                 sleep(1)
             # GooglePlay App 广告特判：
@@ -202,8 +272,27 @@ def clear_common_cm():
                 logger.info('Returning to game from ad. (GP ad?)')
                 # device.commands.launch_app(package_name())
                 # 有些广告，调用 launch_app 会触发重新播放，导致无限循环
-                device.commands.adb_shell('adb shell am force-stop com.android.vending')
+                device.commands.adb_shell('am force-stop com.android.vending')
+                device.commands.launch_app(package_name())
                 sleep(1)
+            elif R.Cm.ButtonPlayCm.q(threshold=0.7).find():
+                logger.info('Returned to CM selection without result.')
+                sleep(2)
+                if _find_cm_award_claimed():
+                    logger.info('Delayed ad award claimed.')
+                    _dismiss_cm_award_claimed()
+                    rep.message('奖励已领取')
+                state = 1
+                state_started_at = time.time()
+            elif R.Hud.ButtonGoBack.exists():
+                logger.info('Returned to in-game non-CM page. Going back.')
+                R.Hud.ButtonGoBack.try_click()
+                sleep(1)
+                state = 1
+                state_started_at = time.time()
+            elif not R.Hud.ButtonGoBack.exists():
+                logger.info('Trying top-right ad close button.')
+                _click_cm_ad_corner_close()
             # 还在加载
             else:
                 rep.message('等待结果')

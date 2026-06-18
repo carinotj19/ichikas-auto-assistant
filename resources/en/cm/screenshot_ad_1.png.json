@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "definitions": {
+    "1b826846-0cc4-4783-ac6e-1eadb8398fe7": {
+      "type": "prefab",
+      "name": "Cm.Ad1.ButtonSkip",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 1178,
+          "y1": 25,
+          "x2": 1228,
+          "y2": 61
+        },
+        "region": {
+          "kind": "rect",
+          "x1": 1110,
+          "y1": 0,
+          "x2": 1280,
+          "y2": 110
+        }
+      }
+    }
+  }
+}
