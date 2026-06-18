@@ -14,7 +14,7 @@ from iaa.utils import asset_path
 
 if TYPE_CHECKING:
     from .iaa_service import IaaService
-from iaa.tasks.registry import REGULAR_TASKS, name_from_id
+from iaa.tasks.registry import REGULAR_TASKS, name_from_id, task_support_reason
 from iaa.tasks.registry import MANUAL_TASKS
 from iaa.context import init as init_config_context
 from iaa.context import set_task_reporter, reset_task_reporter, hub as progress_hub
@@ -371,6 +371,10 @@ class SchedulerService:
         tasks.update(REGULAR_TASKS)
         if task_id not in tasks:
             raise ValueError(f"Unknown manual task: {task_id}")
+        server = self.iaa.config.conf.game.server
+        unsupported_reason = task_support_reason(task_id, server)
+        if unsupported_reason is not None:
+            raise ValueError(f"{name_from_id(task_id)} is not supported on {server}: {unsupported_reason}")
         task_func = tasks[task_id]
         call_args = args or ()
         call_kwargs = kwargs or {}
@@ -689,6 +693,10 @@ class SchedulerService:
         tasks: list[tuple[str, Callable[[], None]]] = []
         for name, func in REGULAR_TASKS.items():
             if conf.scheduler.is_enabled(name):
+                unsupported_reason = task_support_reason(name, conf.game.server)
+                if unsupported_reason is not None:
+                    logger.warning("Skipping task %s on %s: %s", name, conf.game.server, unsupported_reason)
+                    continue
                 tasks.append((name, func))
         return tasks
 

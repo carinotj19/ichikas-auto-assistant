@@ -9,7 +9,7 @@ from PySide6.QtCore import QObject, Property, QTimer, Signal, Slot
 from PySide6.QtWidgets import QFileDialog
 
 from iaa.config.live_presets import AutoLivePreset, LivePresetManager
-from iaa.tasks.registry import REGULAR_TASKS, TASK_INFOS
+from iaa.tasks.registry import REGULAR_TASKS, TASK_INFOS, name_from_id, task_support_reason, task_support_status
 
 from ..models import auto_live_payload_to_plan, builtin_auto_presets, preset_to_payload
 
@@ -66,6 +66,7 @@ class RunController(QObject):
     @Slot(result=str)
     def tasksStateJson(self) -> str:
         scheduler_conf = self._iaa.config.conf.scheduler
+        server = self._iaa.config.conf.game.server
         items: list[dict[str, object]] = []
         ordered_ids = [
             'start_game',
@@ -93,14 +94,18 @@ class RunController(QObject):
         }
         for task_id in ordered_ids:
             info = TASK_INFOS[task_id]
+            support_reason = task_support_reason(task_id, server)
+            support_status = task_support_status(task_id, server)
             items.append(
                 {
                     'id': task_id,
                     'name': info.display_name,
                     'kind': info.kind,
                     'enabled': scheduler_conf.is_enabled(task_id) if task_id in checkable_ids else False,
-                    'runnable': True,
+                    'runnable': support_reason is None,
                     'checkable': task_id in checkable_ids,
+                    'supportStatus': support_status,
+                    'supportReason': support_reason or '',
                 }
             )
         return json.dumps(items, ensure_ascii=False)
@@ -149,11 +154,21 @@ class RunController(QObject):
     def runTask(self, task_id: str) -> None:
         if self._iaa.scheduler.is_starting or self._iaa.scheduler.is_stopping or self._iaa.scheduler.running:
             return
+        server = self._iaa.config.conf.game.server
+        support_reason = task_support_reason(task_id, server)
+        if support_reason is not None:
+            self.operationFailed.emit(f'{name_from_id(task_id)} is not supported on {server}: {support_reason}')
+            return
         self._iaa.scheduler.run_single(task_id, run_in_thread=True)
         self.stateChanged.emit()
 
     @Slot(str)
     def runAutoLive(self, payload_json: str) -> None:
+        server = self._iaa.config.conf.game.server
+        support_reason = task_support_reason('auto_live', server)
+        if support_reason is not None:
+            self.operationFailed.emit(f'{name_from_id("auto_live")} is not supported on {server}: {support_reason}')
+            return
         payload = json.loads(payload_json)
         plan = auto_live_payload_to_plan(payload)
         LivePresetManager().save_last_auto(AutoLivePreset(name='上次设定', plan=plan))

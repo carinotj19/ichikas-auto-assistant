@@ -4,6 +4,8 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from iaa.definitions.consts import ServerName
+
 from .cm import cm
 from .live import challenge_live, solo_live
 from .start_game import start_game
@@ -66,6 +68,49 @@ def name_from_id(task_id: str) -> str:
         '_dump_sekai_home': 'dump 烤森',
     }
     return mapping.get(task_id, task_id)
+
+
+EN_CANDIDATE_TASKS = frozenset(
+    {
+        'start_game',
+        'cm',
+        'solo_live',
+        'activity_story',
+        'area_convos',
+        'main_story',
+        '_dump_item',
+        '_dump_sekai_home',
+    }
+)
+
+EN_UNSUPPORTED_TASK_REASONS: dict[str, str] = {
+    'challenge_live': 'Global / EN challenge live weekly reward flow is not candidate-tested yet.',
+    'event_shop': 'Global / EN normal event shop flow is not candidate-tested yet.',
+    'gift': 'Global / EN gift flow is not part of the current candidate-supported safe-mode set.',
+    'auto_live': 'Global / EN auto_live presets are not candidate-tested across modes yet.',
+    'mission_rewards': 'Global / EN mission rewards flow is not candidate-tested yet.',
+}
+
+
+def task_support_status(task_id: str, server: ServerName) -> Literal['supported', 'candidate', 'unsupported']:
+    if server != 'en':
+        return 'supported'
+    if task_id in EN_CANDIDATE_TASKS:
+        return 'candidate'
+    return 'unsupported'
+
+
+def task_support_reason(task_id: str, server: ServerName) -> str | None:
+    if task_support_status(task_id, server) != 'unsupported':
+        return None
+    return EN_UNSUPPORTED_TASK_REASONS.get(
+        task_id,
+        'Global / EN support for this task is not verified yet.',
+    )
+
+
+def is_task_supported(task_id: str, server: ServerName) -> bool:
+    return task_support_reason(task_id, server) is None
 
 
 TASK_INFOS: dict[str, TaskInfo] = {

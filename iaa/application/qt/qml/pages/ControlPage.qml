@@ -130,7 +130,7 @@ PageContainer {
                                 Switch {
                                     visible: !!modelData.checkable
                                     checked: !!modelData.enabled
-                                    enabled: !runController.running && !runController.isStarting && !runController.isStopping
+                                    enabled: !!modelData.runnable && !runController.running && !runController.isStarting && !runController.isStopping
                                     text: modelData.name
                                     onToggled: runController.setRegularTaskEnabled(modelData.id, checked)
                                 }
@@ -141,7 +141,9 @@ PageContainer {
                                 Item { Layout.fillWidth: true }
                                 Button {
                                     text: "运行"
-                                    enabled: !runController.running && !runController.isStarting && !runController.isStopping
+                                    enabled: !!modelData.runnable && !runController.running && !runController.isStarting && !runController.isStopping
+                                    ToolTip.visible: hovered && !modelData.runnable && !!modelData.supportReason
+                                    ToolTip.text: modelData.supportReason || ""
                                     onClicked: {
                                         if (modelData.id === "auto_live") {
                                             root.autoLiveDialog.open()
