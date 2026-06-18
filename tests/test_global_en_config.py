@@ -54,8 +54,9 @@ class GlobalEnConfigTests(unittest.TestCase):
     def test_global_en_task_support_policy_is_conservative(self) -> None:
         self.assertEqual(task_support_status('main_story', 'en'), 'candidate')
         self.assertTrue(is_task_supported('main_story', 'en'))
+        self.assertEqual(task_support_status('gift', 'en'), 'candidate')
         self.assertEqual(task_support_status('event_shop', 'en'), 'unsupported')
-        self.assertIn('not candidate-tested', task_support_reason('event_shop', 'en') or '')
+        self.assertIn('尚未完成候选测试', task_support_reason('event_shop', 'en') or '')
 
     def test_non_global_servers_keep_existing_task_support(self) -> None:
         self.assertEqual(task_support_status('event_shop', 'jp'), 'supported')
@@ -72,9 +73,9 @@ class GlobalEnConfigTests(unittest.TestCase):
         self.assertIn('activity_story', task_ids)
         self.assertIn('cm', task_ids)
         self.assertIn('area_convos', task_ids)
+        self.assertIn('gift', task_ids)
         self.assertNotIn('challenge_live', task_ids)
         self.assertNotIn('event_shop', task_ids)
-        self.assertNotIn('gift', task_ids)
 
     def test_global_en_manual_run_rejects_unsupported_task_before_starting(self) -> None:
         conf = make_iaa_config('en')
@@ -107,7 +108,7 @@ class GlobalEnConfigTests(unittest.TestCase):
         self.assertEqual(tasks['main_story']['supportStatus'], 'candidate')
         self.assertFalse(tasks['event_shop']['runnable'])
         self.assertEqual(tasks['event_shop']['supportStatus'], 'unsupported')
-        self.assertIn('not candidate-tested', tasks['event_shop']['supportReason'])
+        self.assertIn('尚未完成候选测试', tasks['event_shop']['supportReason'])
 
 
 if __name__ == '__main__':
