@@ -378,6 +378,9 @@ class SchedulerService:
         task_func = tasks[task_id]
         call_args = args or ()
         call_kwargs = kwargs or {}
+        plan = call_kwargs.get('plan')
+        if task_id == 'auto_live' and server == 'en' and getattr(plan, 'play_mode', None) != 'game_auto':
+            raise ValueError('自动演出 is only candidate-tested on Global / EN with in-game auto.')
 
         def _call() -> None:
             task_func(*call_args, **call_kwargs)

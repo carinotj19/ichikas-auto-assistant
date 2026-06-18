@@ -79,6 +79,8 @@ EN_CANDIDATE_TASKS = frozenset(
         'gift',
         'area_convos',
         'main_story',
+        'auto_live',
+        'mission_rewards',
         '_dump_item',
         '_dump_sekai_home',
     }
@@ -87,8 +89,6 @@ EN_CANDIDATE_TASKS = frozenset(
 EN_UNSUPPORTED_TASK_REASONS: dict[str, str] = {
     'challenge_live': 'Global / EN 的挑战演出周奖励流程尚未完成候选测试。',
     'event_shop': 'Global / EN 的普通活动商店流程尚未完成候选测试。',
-    'auto_live': 'Global / EN 的自动演出预设尚未覆盖多种模式的候选测试。',
-    'mission_rewards': 'Global / EN 的任务奖励流程尚未完成候选测试。',
 }
 
 

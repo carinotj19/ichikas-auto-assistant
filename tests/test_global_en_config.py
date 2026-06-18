@@ -12,6 +12,7 @@ from iaa.application.qt.models.mappings import SERVER_DISPLAY_MAP, SERVER_VALUE_
 from iaa.config.schemas import GameConfig
 from iaa.definitions.consts import bundle_id_by_server, package_by_server
 from iaa.definitions.enums import ShopItem
+from iaa.tasks.live.live import ListLoopPlan
 from iaa.tasks.registry import (
     is_task_supported,
     task_support_reason,
@@ -55,6 +56,8 @@ class GlobalEnConfigTests(unittest.TestCase):
         self.assertEqual(task_support_status('main_story', 'en'), 'candidate')
         self.assertTrue(is_task_supported('main_story', 'en'))
         self.assertEqual(task_support_status('gift', 'en'), 'candidate')
+        self.assertEqual(task_support_status('mission_rewards', 'en'), 'candidate')
+        self.assertEqual(task_support_status('auto_live', 'en'), 'candidate')
         self.assertEqual(task_support_status('event_shop', 'en'), 'unsupported')
         self.assertIn('尚未完成候选测试', task_support_reason('event_shop', 'en') or '')
 
@@ -106,9 +109,24 @@ class GlobalEnConfigTests(unittest.TestCase):
 
         self.assertTrue(tasks['main_story']['runnable'])
         self.assertEqual(tasks['main_story']['supportStatus'], 'candidate')
+        self.assertTrue(tasks['auto_live']['runnable'])
+        self.assertEqual(tasks['auto_live']['supportStatus'], 'candidate')
+        self.assertTrue(tasks['mission_rewards']['runnable'])
+        self.assertEqual(tasks['mission_rewards']['supportStatus'], 'candidate')
         self.assertFalse(tasks['event_shop']['runnable'])
         self.assertEqual(tasks['event_shop']['supportStatus'], 'unsupported')
         self.assertIn('尚未完成候选测试', tasks['event_shop']['supportReason'])
+
+    def test_global_en_auto_live_rejects_script_auto_before_starting(self) -> None:
+        conf = make_iaa_config('en')
+        scheduler = SchedulerService(SimpleNamespace(config=SimpleNamespace(conf=conf)))
+
+        with self.assertRaisesRegex(ValueError, 'in-game auto'):
+            scheduler.run_single(
+                'auto_live',
+                run_in_thread=False,
+                kwargs={'plan': ListLoopPlan(play_mode='script_auto', loop_count=1)},
+            )
 
 
 if __name__ == '__main__':

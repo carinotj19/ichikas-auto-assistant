@@ -523,7 +523,8 @@ def solo_live(plan: OncePlan | SingleLoopPlan | ListLoopPlan):
         if plan.play_mode == 'game_auto':
             reporter.message('开始单曲循环（游戏自动）')
             _prepare_solo_live(plan.song_select_mode, plan.song_name)
-            start_auto_live('all', return_to='home', auto_set_unit=auto_set_unit, ap_multiplier=plan.ap_multiplier)
+            if not start_auto_live('all', return_to='home', auto_set_unit=auto_set_unit, ap_multiplier=plan.ap_multiplier):
+                logger.info('Auto live did not start; stopping single song loop.')
             reporter.message('单曲循环完成，返回首页')
         # 脚本自动
         else:
@@ -558,13 +559,15 @@ def solo_live(plan: OncePlan | SingleLoopPlan | ListLoopPlan):
             first_run = True
             for _ in Loop():
                 _prepare_solo_live(plan.loop_song_mode, None)
-                start_auto_live(
+                if not start_auto_live(
                     'once' if plan.play_mode == 'game_auto' else 'script',
                     return_to='home',
                     debug_enabled=plan.debug_enabled,
                     auto_set_unit=auto_set_unit,
                     ap_multiplier=plan.ap_multiplier if first_run else None,
-                )
+                ):
+                    logger.info('Auto live did not start; stopping list loop.')
+                    break
                 first_run = False
                 count += 1
                 logger.info(f'Song looped. {count}/{max_count}')

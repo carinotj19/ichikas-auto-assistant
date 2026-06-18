@@ -171,6 +171,9 @@ class RunController(QObject):
             return
         payload = json.loads(payload_json)
         plan = auto_live_payload_to_plan(payload)
+        if server == 'en' and plan.play_mode != 'game_auto':
+            self.operationFailed.emit('自动演出目前仅在 Global / EN 候选支持游戏内 AUTO。')
+            return
         LivePresetManager().save_last_auto(AutoLivePreset(name='上次设定', plan=plan))
         if plan.play_mode == 'script_auto':
             self.scriptAutoWarningRequested.emit(
