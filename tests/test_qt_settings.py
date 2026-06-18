@@ -3,9 +3,11 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from PySide6.QtCore import QCoreApplication
+
 from iaa.application.qt.controllers.settings_controller import SettingsController
 from iaa.config.base import IaaConfig
-from iaa.config.schemas import MuMuEmulatorData
+from iaa.config.shared import SharedConfig
 
 
 def make_conf() -> IaaConfig:
@@ -17,11 +19,15 @@ def make_conf() -> IaaConfig:
             'game': {
                 'server': 'jp',
                 'link_account': 'google',
-                'emulator': 'mumu_v5',
+            },
+            'device': {
+                'lifecycle': {
+                    'type': 'mumu_v5',
+                    'instance_id': '42',
+                    'check_and_start': False,
+                },
                 'control_impl': 'scrcpy',
-                'check_emulator': False,
                 'scrcpy_virtual_display': True,
-                'emulator_data': {'instance_id': '42'},
             },
             'live': {},
         }
@@ -34,68 +40,70 @@ def make_config_service(conf: IaaConfig, *, save: Mock | None = None) -> SimpleN
         save=save or Mock(),
         save_shared=Mock(),
         current_config_name='test',
-        shared=SimpleNamespace(telemetry=SimpleNamespace(sentry=None)),
+        shared=SharedConfig(),
     )
 
 
-class SettingsControllerTests(unittest.TestCase):
-    def test_save_json_forces_tw_link_account_to_no(self) -> None:
-        conf = make_conf()
-        config_service = make_config_service(conf, save=Mock())
-        controller = SettingsController(
-            SimpleNamespace(
-                config=config_service,
-                scheduler=SimpleNamespace(device=None, connect_device=Mock()),
-            )
+def make_controller(conf: IaaConfig, *, save: Mock | None = None) -> SettingsController:
+    return SettingsController(
+        SimpleNamespace(
+            config=make_config_service(conf, save=save),
+            scheduler=SimpleNamespace(device=None, connect_device=Mock()),
         )
-        state = json.loads(controller.stateJson())
-        state['game']['server'] = 'tw'
-        state['game']['linkAccount'] = 'google_play'
-        controller.saveJson(json.dumps(state, ensure_ascii=False))
+    )
+
+
+def runtime_field(controller: SettingsController, field_id: str) -> dict:
+    return json.loads(controller.getRuntime())['fieldMap'][field_id]
+
+
+class SettingsControllerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        QCoreApplication.instance() or QCoreApplication([])
+
+    def test_set_value_forces_tw_link_account_to_no(self) -> None:
+        conf = make_conf()
+        save = Mock()
+        controller = make_controller(conf, save=save)
+
+        controller.setValue('game.server', 'tw')
+
         self.assertEqual(conf.game.server, 'tw')
         self.assertEqual(conf.game.link_account, 'no')
-        config_service.save.assert_not_called()
-        config_service.save_shared.assert_called_once()
+        save.assert_not_called()
 
     @patch('kotonebot.client.host.Mumu12V5Host.list')
     def test_refresh_mumu_instances_preserves_existing_selection(self, list_mock: Mock) -> None:
         list_mock.return_value = [SimpleNamespace(id='42', name='Main'), SimpleNamespace(id='43', name='Alt')]
         conf = make_conf()
-        controller = SettingsController(
-            SimpleNamespace(
-                config=make_config_service(conf, save=Mock()),
-                scheduler=SimpleNamespace(device=None, connect_device=Mock()),
-            )
-        )
-        payload = json.loads(controller.refreshMumuInstancesJson())
-        self.assertEqual(payload['selectedId'], '42')
-        self.assertEqual(len(payload['items']), 3)
+        controller = make_controller(conf)
+
+        controller.triggerAction('device.mumuInstanceId', 'refresh')
+        field = runtime_field(controller, 'device.mumuInstanceId')
+
+        self.assertEqual(field['value'], '42')
+        self.assertEqual(len(field['options']), 3)
 
     @patch('kotonebot.client.host.Mumu12V5Host.list')
     def test_refresh_mumu_instances_prefers_ui_selected_id(self, list_mock: Mock) -> None:
         list_mock.return_value = [SimpleNamespace(id='42', name='Main'), SimpleNamespace(id='43', name='Alt')]
         conf = make_conf()
-        controller = SettingsController(
-            SimpleNamespace(
-                config=make_config_service(conf, save=Mock()),
-                scheduler=SimpleNamespace(device=None, connect_device=Mock()),
-            )
-        )
-        payload = json.loads(controller.refreshMumuInstancesJsonFor('mumu_v5', '43'))
-        self.assertEqual(payload['selectedId'], '43')
-        self.assertIn('当前选择 ID: 43', payload['statusText'])
+        controller = make_controller(conf)
 
-    def test_state_json_exposes_saved_mumu_instance(self) -> None:
+        controller.setValue('device.mumuInstanceId', '43')
+        controller.triggerAction('device.mumuInstanceId', 'refresh')
+        field = runtime_field(controller, 'device.mumuInstanceId')
+
+        self.assertEqual(field['value'], '43')
+
+    def test_runtime_exposes_saved_mumu_instance(self) -> None:
         conf = make_conf()
-        conf.game.emulator_data = MuMuEmulatorData(instance_id='42')
-        controller = SettingsController(
-            SimpleNamespace(
-                config=make_config_service(conf, save=Mock()),
-                scheduler=SimpleNamespace(device=None, connect_device=Mock()),
-            )
-        )
-        state = json.loads(controller.stateJson())
-        self.assertEqual(state['game']['mumuInstanceId'], '42')
+        controller = make_controller(conf)
+
+        field = runtime_field(controller, 'device.mumuInstanceId')
+
+        self.assertEqual(field['value'], '42')
 
 
 if __name__ == '__main__':
