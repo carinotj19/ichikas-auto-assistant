@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 SkipMode = Literal['skip', 'read']
 
 @action('进入剧情阅读')
-def enter_story(*, is_wl: bool = False):
+def enter_story(*, is_wl: bool = False, episode_point: tuple[int, int] | None = None):
     """
     前置：位于剧情列表界面\n
     结束：剧情阅读界面
 
     :param is_wl: 是否是为 WorldLink 当期活动剧情
+    :param episode_point: 要进入的分集位置。未指定时使用默认的第一话位置。
     """
     for _ in Loop():
         if R.Story.ButtonStoryMenu.find():
@@ -35,8 +36,9 @@ def enter_story(*, is_wl: bool = False):
             logger.debug('Clicked without voice button.')
             sleep(0.4)
         else:
-            # 尝试点进最上面一话
-            if is_wl:
+            if episode_point is not None:
+                device.click(episode_point)
+            elif is_wl:
                 device.click(R.Story.PointFirstEpisodeWl)
             else:
                 device.click(R.Story.PointFirstEpisode)
@@ -60,7 +62,7 @@ def skip_stories(mode: SkipMode = 'skip', *, end_condition: Callable[[], bool]):
             if R.CommonDialog.ButtonAwardClaimedOk.try_click():
                 logger.debug('Clicked award claimed ok button.')
         elif end_condition():
-            logger.info('Skip stories (skip mode) finished.')
+            logger.info('Skip stories (%s mode) finished.', mode)
             break
         else:
             # 跳过处理
@@ -80,7 +82,6 @@ def skip_stories(mode: SkipMode = 'skip', *, end_condition: Callable[[], bool]):
                             device.click_center()
                             sleep(0.1)
                         if end_condition():
-                            logger.info('Skip stories (read mode) finished.')
-                            return
+                            break
                 case _:
                     assert_never(mode)

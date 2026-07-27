@@ -1,6 +1,41 @@
 {
   "version": 3,
   "definitions": {
+    "c90480a2-d2e9-475a-bcd9-c87f200a703c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Story.BadgeSkippedEpisode",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 1110,
+          "y1": 280,
+          "x2": 1188,
+          "y2": 307
+        },
+        "threshold": 0.75
+      },
+      "displayName": "剧情分集列表 SKIP 标记",
+      "variant_policy": {
+        "tw": "inherit",
+        "cn": "inherit",
+        "en": "inherit"
+      }
+    },
+    "6bc1be6a-f1a8-49be-9fc7-a6305326d0bc": {
+      "type": "hint-box",
+      "name": "Story.BoxEpisodeStatusColumn",
+      "props": {
+        "region": {
+          "kind": "rect",
+          "x1": 1165,
+          "y1": 140,
+          "x2": 1190,
+          "y2": 690
+        }
+      },
+      "displayName": "剧情分集列表 状态标记列"
+    },
     "59dcf6cd-475f-4144-b75a-042caecb2fb6": {
       "type": "hint-box",
       "name": "Activity.BoxLatestEpisodeBadge",
