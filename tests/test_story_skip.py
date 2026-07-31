@@ -116,6 +116,30 @@ class MainStoryTests(unittest.TestCase):
         enter_story.assert_called_once_with(episode_point=(874, 333))
         self.assertEqual(resources.Story.ButtonGoBack.try_click.call_count, 2)
 
+    def test_farm_single_ignores_stale_episode_list_before_select_click(self) -> None:
+        resources = mock.Mock()
+        resources.Story.StoryList.ButtonEnter.try_click.side_effect = [False, True, False]
+        resources.Story.ButtonBookmark.exists.return_value = True
+        resources.Story.StoryList.ButtonExpandUnit.find.return_value = object()
+        enter_story = mock.Mock()
+
+        with mock.patch.dict(
+            main_story.__dict__,
+            {
+                'R': resources,
+                'Loop': lambda *args, **kwargs: [None] * 5,
+                '_episode_point': mock.Mock(return_value=(874, 333)),
+                'enter_story': enter_story,
+                'skip_stories': mock.Mock(),
+                'sleep': mock.Mock(),
+            },
+        ):
+            main_story._farm_single()
+
+        self.assertEqual(resources.Story.StoryList.ButtonEnter.try_click.call_count, 3)
+        resources.Story.ButtonBookmark.exists.assert_called_once()
+        enter_story.assert_called_once_with(episode_point=(874, 333))
+
 
 if __name__ == '__main__':
     unittest.main()

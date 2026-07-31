@@ -83,10 +83,12 @@ def _farm_single():
     结束：主线剧情列表，且已过滤未读剧情
     """
     # 进入分集列表
+    clicked = False
     for _ in Loop():
         if R.Story.StoryList.ButtonEnter.try_click():
+            clicked = True
             sleep(1)
-        elif R.Story.ButtonBookmark.exists():
+        elif clicked and R.Story.ButtonBookmark.exists():
             break
     # 刷剧情
     enter_story(episode_point=_episode_point())
