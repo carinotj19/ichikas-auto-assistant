@@ -42,6 +42,42 @@
         "cn": "require",
         "en": "require"
       }
+    },
+    "cf942c64-3aa8-47ba-ac3f-e056444b42e5": {
+      "type": "hint-point",
+      "name": "Story.StoryList.PointFilterCategoryAll",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 310,
+          "y": 127
+        }
+      },
+      "displayName": "故事列表 筛选弹窗 分类 全部"
+    },
+    "65f08e7b-0728-4930-8c1b-8168441c3aca": {
+      "type": "hint-point",
+      "name": "Story.StoryList.PointFilterViewAll",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 310,
+          "y": 237
+        }
+      },
+      "displayName": "故事列表 筛选弹窗 浏览状态 全部"
+    },
+    "6b1d7142-7420-4a2a-bad9-919fef052e5e": {
+      "type": "hint-point",
+      "name": "Story.StoryList.PointFilterNotJoined",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 659,
+          "y": 341
+        }
+      },
+      "displayName": "故事列表 筛选弹窗 虚拟演唱会 未参加"
     }
   }
 }

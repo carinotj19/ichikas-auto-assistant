@@ -30,6 +30,12 @@ def go_home(*, check_alive: bool = False):
             break
         elif R.Hud.ButtonGoBack.try_click():
             logger.debug('Go back button found and clicked.')
+        elif R.Story.ButtonSkipStory.try_click():
+            logger.debug('Confirmed skipping the active story to return home.')
+        elif R.Story.ButtonIconSkip.try_click():
+            logger.debug('Clicked skip in the active story menu.')
+        elif R.Story.ButtonStoryMenu.try_click():
+            logger.debug('Opened the active story menu.')
         else:
             device.click(1, 367)
 
@@ -50,4 +56,3 @@ def hanlde_tip_dialog() -> bool:
         logger.info('Tip dialog found (button %s) and clicked.', str(btn.prefab))
         return True
     return False
-    

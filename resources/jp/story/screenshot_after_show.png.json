@@ -1,0 +1,26 @@
+{
+  "version": 3,
+  "definitions": {
+    "58b16d61-6717-4418-823c-ab08be860c9c": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "Story.ButtonAfterShowExit",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 12,
+          "y1": 12,
+          "x2": 100,
+          "y2": 94
+        },
+        "threshold": 0.85
+      },
+      "displayName": "After Show 退出按钮",
+      "variant_policy": {
+        "tw": "inherit",
+        "cn": "inherit",
+        "en": "inherit"
+      }
+    }
+  }
+}

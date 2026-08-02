@@ -53,6 +53,18 @@
       },
       "displayName": "剧情列表 第一话 位置"
     },
+    "e5b21445-2b52-4a5c-b2a8-0d71df1b4892": {
+      "type": "hint-point",
+      "name": "Story.PointAfterShow",
+      "props": {
+        "point": {
+          "kind": "point",
+          "x": 180,
+          "y": 640
+        }
+      },
+      "displayName": "After Show 入口位置"
+    },
     "0f04012a-b093-48d3-8e5e-73eb785927fe": {
       "type": "prefab",
       "prefab_id": "TemplateMatchPrefab",
