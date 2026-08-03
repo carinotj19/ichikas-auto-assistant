@@ -71,7 +71,9 @@ class MainStoryTests(unittest.TestCase):
         resources = mock.Mock()
         resources.Story.ButtonAfterShowExit.exists.return_value = True
         resources.Story.ButtonAfterShowExit.try_click.side_effect = [True, False]
-        resources.Story.ButtonBookmark.exists.return_value = True
+        resources.Story.ButtonBookmark.exists.side_effect = [False, True]
+        resources.Story.TextEventStory.exists.return_value = False
+        resources.Cm.TextAwardClaimed.find.return_value = None
         fake_device = mock.Mock()
         wait = mock.Mock()
 
@@ -101,6 +103,8 @@ class MainStoryTests(unittest.TestCase):
         resources.Story.ButtonAfterShowExit.exists.side_effect = [False, False, False, True]
         resources.Story.ButtonAfterShowExit.try_click.return_value = True
         resources.Story.ButtonBookmark.exists.side_effect = [False, True, False, True]
+        resources.Story.TextEventStory.exists.return_value = False
+        resources.Cm.TextAwardClaimed.find.return_value = None
         fake_device = mock.Mock()
 
         with mock.patch.dict(
@@ -118,32 +122,45 @@ class MainStoryTests(unittest.TestCase):
         self.assertTrue(claimed)
         fake_device.click.assert_called_once_with(resources.Story.PointAfterShow)
 
-    def test_claim_after_show_exit_timeout_applies_after_door_click(self) -> None:
+    def test_claim_after_show_presses_back_until_episode_list_returns(self) -> None:
         resources = mock.Mock()
         resources.Story.ButtonAfterShowExit.exists.return_value = True
         resources.Story.ButtonAfterShowExit.try_click.return_value = True
+        resources.Story.ButtonAfterShowExit.template.slice_rect.center = (56, 53)
         resources.Story.ButtonBookmark.exists.return_value = False
+        resources.Story.TextEventStory.exists.side_effect = [False, False, True]
+        resources.Cm.TextAwardClaimed.find.return_value = None
+        fake_device = mock.Mock()
 
         with mock.patch.dict(
             main_story.__dict__,
             {
                 'R': resources,
                 'Loop': lambda *args, **kwargs: [None] * 5,
-                'device': mock.Mock(),
+                'device': fake_device,
                 'sleep': mock.Mock(),
-                'time': mock.Mock(monotonic=mock.Mock(side_effect=[0, 1, 2, 32])),
+                'time': mock.Mock(monotonic=mock.Mock(side_effect=[0, 1, 2, 32, 33])),
             },
         ):
-            with self.assertRaisesRegex(RuntimeError, 'did not return'):
-                main_story._claim_after_show()
+            claimed = main_story._claim_after_show()
 
+        self.assertTrue(claimed)
         resources.Story.ButtonAfterShowExit.try_click.assert_called_once()
+        self.assertEqual(
+            fake_device.click.call_args_list,
+            [
+                mock.call(resources.Story.PointAfterShow),
+                mock.call((56, 53)),
+            ],
+        )
 
     def test_claim_after_show_retries_an_ignored_early_exit_click(self) -> None:
         resources = mock.Mock()
         resources.Story.ButtonAfterShowExit.exists.return_value = True
         resources.Story.ButtonAfterShowExit.try_click.return_value = True
-        resources.Story.ButtonBookmark.exists.side_effect = [False, True]
+        resources.Story.ButtonBookmark.exists.side_effect = [False, False, False, True]
+        resources.Story.TextEventStory.exists.return_value = False
+        resources.Cm.TextAwardClaimed.find.return_value = None
 
         with mock.patch.dict(
             main_story.__dict__,
@@ -159,6 +176,82 @@ class MainStoryTests(unittest.TestCase):
 
         self.assertTrue(claimed)
         self.assertEqual(resources.Story.ButtonAfterShowExit.try_click.call_count, 2)
+
+    def test_claim_after_show_dismisses_claimed_rewards_after_exit(self) -> None:
+        resources = mock.Mock()
+        resources.Story.ButtonAfterShowExit.exists.return_value = True
+        resources.Story.ButtonAfterShowExit.try_click.return_value = True
+        resources.Story.ButtonBookmark.exists.side_effect = [False, True]
+        resources.Story.TextEventStory.exists.return_value = False
+        reward = mock.Mock()
+        reward.rect.center = (634, 419)
+        resources.Cm.TextAwardClaimed.find.side_effect = [None, reward, None]
+        fake_device = mock.Mock()
+
+        with mock.patch.dict(
+            main_story.__dict__,
+            {
+                'R': resources,
+                'Loop': lambda *args, **kwargs: [None] * 5,
+                'device': fake_device,
+                'sleep': mock.Mock(),
+            },
+        ):
+            claimed = main_story._claim_after_show()
+
+        self.assertTrue(claimed)
+        self.assertEqual(
+            fake_device.click.call_args_list,
+            [
+                mock.call(resources.Story.PointAfterShow),
+                mock.call(714, 419),
+            ],
+        )
+        resources.Story.ButtonAfterShowExit.try_click.assert_called_once()
+
+    def test_claim_after_show_accepts_episode_list_at_timeout_boundary(self) -> None:
+        resources = mock.Mock()
+        resources.Story.ButtonAfterShowExit.exists.return_value = True
+        resources.Story.ButtonAfterShowExit.try_click.return_value = True
+        resources.Story.ButtonBookmark.exists.return_value = True
+        resources.Story.TextEventStory.exists.return_value = False
+        resources.Cm.TextAwardClaimed.find.return_value = None
+
+        with mock.patch.dict(
+            main_story.__dict__,
+            {
+                'R': resources,
+                'Loop': lambda *args, **kwargs: [None] * 5,
+                'device': mock.Mock(),
+                'sleep': mock.Mock(),
+                'time': mock.Mock(monotonic=mock.Mock(side_effect=[0, 1, 32])),
+            },
+        ):
+            claimed = main_story._claim_after_show()
+
+        self.assertTrue(claimed)
+        resources.Story.ButtonAfterShowExit.try_click.assert_not_called()
+
+    def test_claim_after_show_accepts_event_story_tab_as_episode_list(self) -> None:
+        resources = mock.Mock()
+        resources.Story.ButtonAfterShowExit.exists.return_value = True
+        resources.Story.ButtonBookmark.exists.return_value = False
+        resources.Story.TextEventStory.exists.return_value = True
+        resources.Cm.TextAwardClaimed.find.return_value = None
+
+        with mock.patch.dict(
+            main_story.__dict__,
+            {
+                'R': resources,
+                'Loop': lambda *args, **kwargs: [None] * 5,
+                'device': mock.Mock(),
+                'sleep': mock.Mock(),
+            },
+        ):
+            claimed = main_story._claim_after_show()
+
+        self.assertTrue(claimed)
+        resources.Story.ButtonAfterShowExit.try_click.assert_not_called()
 
     def test_claim_after_show_skips_locked_or_missing_card(self) -> None:
         resources = mock.Mock()

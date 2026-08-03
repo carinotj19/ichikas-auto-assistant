@@ -114,14 +114,24 @@ def _claim_after_show() -> bool:
     last_exit_click: float | None = None
     for _ in Loop(interval=1):
         now = time.monotonic()
+        if reward := R.Cm.TextAwardClaimed.find():
+            x, y = reward.rect.center
+            device.click(x + 80, y)
+            logger.info('Dismissed After Show claimed rewards.')
+            sleep(0.5)
+            continue
+        if R.Story.ButtonBookmark.exists() or R.Story.TextEventStory.exists():
+            logger.info('After Show entered and exited.')
+            return True
         if now >= deadline:
-            raise RuntimeError('After Show did not return to the episode list.')
+            device.click(R.Story.ButtonAfterShowExit.template.slice_rect.center)
+            logger.warning('After Show exit is still pending; pressed Back to recover.')
+            deadline = now + 3
+            sleep(0.5)
+            continue
         if (last_exit_click is None or now - last_exit_click >= 3) and R.Story.ButtonAfterShowExit.try_click():
             last_exit_click = now
             continue
-        if R.Story.ButtonBookmark.exists():
-            logger.info('After Show entered and exited.')
-            return True
 
 def _farm_single() -> bool:
     """
