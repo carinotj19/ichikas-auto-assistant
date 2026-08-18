@@ -106,6 +106,20 @@
         "cn": "inherit",
         "en": "inherit"
       }
+    },
+    "b53047bb-bdb3-4d13-abd8-47be590f5a14": {
+      "type": "hint-box",
+      "name": "Story.BoxAfterShowCard",
+      "props": {
+        "region": {
+          "kind": "rect",
+          "x1": 292,
+          "y1": 601,
+          "x2": 333,
+          "y2": 650
+        }
+      },
+      "displayName": "After Show 卡片 侧边栏区域"
     }
   }
 }

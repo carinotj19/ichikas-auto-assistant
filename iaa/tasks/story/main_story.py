@@ -83,8 +83,32 @@ def _filter_not_joined():
         elif R.Story.StoryList.ButtonFilter.find():
             break
 
+def _has_after_show_card() -> bool:
+    """
+    判断分集列表左下角是否存在 After Show 卡片。
+
+    卡片右侧竖排文字所在的底板是固定 UI 素材：未解锁时为 #bdbdd1，
+    解锁前（上锁）会整体压暗为 #5e5e76。两者都与卡片本身的活动图无关，
+    因此只需比对这两种颜色即可区分「有卡片」与「本篇剧情没有 After Show」。
+
+    前置：分集列表
+    """
+    for hexcolor in ('#bdbdd1', '#5e5e76'):
+        found = color.find_all(
+            hexcolor,
+            rect=R.Story.BoxAfterShowCard,
+            threshold=0.95,
+            filter_method='point',
+        )
+        if len(found) >= 800:
+            return True
+    return False
+
 def _claim_after_show() -> bool:
     """Enter an unlocked After Show, wait for participation credit, then leave."""
+    if not _has_after_show_card():
+        logger.info('This story has no After Show.')
+        return False
     entered = False
     for _ in range(2):
         device.click(R.Story.PointAfterShow)

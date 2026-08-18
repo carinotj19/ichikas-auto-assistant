@@ -81,6 +81,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': fake_device,
                 'sleep': wait,
@@ -111,6 +112,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': fake_device,
                 'sleep': mock.Mock(),
@@ -136,6 +138,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': fake_device,
                 'sleep': mock.Mock(),
@@ -166,6 +169,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': mock.Mock(),
                 'sleep': mock.Mock(),
@@ -192,6 +196,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': fake_device,
                 'sleep': mock.Mock(),
@@ -221,6 +226,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': mock.Mock(),
                 'sleep': mock.Mock(),
@@ -243,6 +249,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': mock.Mock(),
                 'sleep': mock.Mock(),
@@ -253,7 +260,7 @@ class MainStoryTests(unittest.TestCase):
         self.assertTrue(claimed)
         resources.Story.ButtonAfterShowExit.try_click.assert_not_called()
 
-    def test_claim_after_show_skips_locked_or_missing_card(self) -> None:
+    def test_claim_after_show_retries_once_when_the_card_is_locked(self) -> None:
         resources = mock.Mock()
         resources.Story.ButtonAfterShowExit.exists.return_value = False
         resources.Story.ButtonBookmark.exists.return_value = True
@@ -263,6 +270,7 @@ class MainStoryTests(unittest.TestCase):
             main_story.__dict__,
             {
                 'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=True),
                 'Loop': lambda *args, **kwargs: [None] * 5,
                 'device': fake_device,
                 'sleep': mock.Mock(),
@@ -278,6 +286,49 @@ class MainStoryTests(unittest.TestCase):
                 mock.call(resources.Story.PointAfterShow),
             ],
         )
+
+    def test_claim_after_show_returns_early_when_the_story_has_no_card(self) -> None:
+        resources = mock.Mock()
+        fake_device = mock.Mock()
+
+        with mock.patch.dict(
+            main_story.__dict__,
+            {
+                'R': resources,
+                '_has_after_show_card': mock.Mock(return_value=False),
+                'Loop': lambda *args, **kwargs: [None] * 5,
+                'device': fake_device,
+                'sleep': mock.Mock(),
+            },
+        ):
+            claimed = main_story._claim_after_show()
+
+        self.assertFalse(claimed)
+        fake_device.click.assert_not_called()
+        resources.Story.ButtonAfterShowExit.exists.assert_not_called()
+
+    def test_has_after_show_card_accepts_unlocked_and_locked_backplates(self) -> None:
+        for hexcolor in ('#bdbdd1', '#5e5e76'):
+            with self.subTest(backplate=hexcolor):
+                fake_color = mock.Mock()
+                fake_color.find_all.side_effect = (
+                    lambda c, **kw: [object()] * (2009 if c == hexcolor else 0)
+                )
+                with mock.patch.dict(
+                    main_story.__dict__,
+                    {'R': mock.Mock(), 'color': fake_color},
+                ):
+                    self.assertTrue(main_story._has_after_show_card())
+
+    def test_has_after_show_card_rejects_a_story_without_a_card(self) -> None:
+        fake_color = mock.Mock()
+        # The main story episode list leaves only background art in the rect.
+        fake_color.find_all.side_effect = lambda c, **kw: [object()] * 16
+        with mock.patch.dict(
+            main_story.__dict__,
+            {'R': mock.Mock(), 'color': fake_color},
+        ):
+            self.assertFalse(main_story._has_after_show_card())
 
     def test_filter_not_joined_selects_all_views_and_unjoined_shows(self) -> None:
         resources = mock.Mock()
