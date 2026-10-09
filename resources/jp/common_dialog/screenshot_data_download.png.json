@@ -40,6 +40,25 @@
         "cn": "require",
         "en": "require"
       }
+    },
+    "de39cfd9-a5b9-4d4a-bddb-e6c317110d18": {
+      "type": "prefab",
+      "prefab_id": "TemplateMatchPrefab",
+      "name": "CommonDialog.TextRecommendDownloadViaWifiTitle",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 428,
+          "y1": 355,
+          "x2": 856,
+          "y2": 423
+        }
+      },
+      "variant_policy": {
+        "tw": "inherit",
+        "cn": "inherit",
+        "en": "require"
+      }
     }
   }
 }

@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "definitions": {
+    "de39cfd9-a5b9-4d4a-bddb-e6c317110d18": {
+      "type": "prefab",
+      "name": "CommonDialog.TextRecommendDownloadViaWifiTitle",
+      "variant": "en",
+      "props": {
+        "template": {
+          "kind": "image",
+          "x1": 411,
+          "y1": 355,
+          "x2": 876,
+          "y2": 423
+        }
+      },
+      "displayName": "Connecting to Wi-Fi is recommended when downloading files larger than 50MB."
+    }
+  }
+}

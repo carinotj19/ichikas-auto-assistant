@@ -3,11 +3,13 @@ import logging
 import cv2
 from kotonebot import device, sleep
 
+from iaa.context import server
+
 from . import R
 
 logger = logging.getLogger(__name__)
 
-def handle_data_download():
+def handle_data_download() -> bool:
     """
     处理数据下载对话框。
 
@@ -16,9 +18,10 @@ def handle_data_download():
 
     :return: 是否处理了数据下载对话框
     """
-    if R.CommonDialog.TextRecommendDownloadViaWifi.find():
+    if (R.CommonDialog.TextRecommendDownloadViaWifi.find()
+        or (server() == 'en' and R.CommonDialog.TextRecommendDownloadViaWifiTitle.find())):
         logger.debug('Data download dialog found.')
-        if R.CommonDialog.ButtonDownload.click():
+        if R.CommonDialog.ButtonDownload.try_click():
             logger.debug('Clicked Download button.')
             return True
     return False
